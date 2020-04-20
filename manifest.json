@@ -1,0 +1,7 @@
+{
+    "domain": "eq3btsmartovermqtt",
+    "name": "EQ3 Bluetooth Smart Thermostats over MQTT",
+    "documentation": "",
+    "requirements": ["construct==2.9.45", "python-eq3bt==0.1.11"],
+    "codeowners": ["@sharafullin"]
+  }
