@@ -1,1 +1,1 @@
-"""The eq3btsmart component."""
+"""The Bluetooth over MQTT component."""
