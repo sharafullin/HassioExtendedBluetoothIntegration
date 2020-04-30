@@ -19,8 +19,10 @@ def broadcast_discovery():
     server.settimeout(0.2)
     message = b"ha-rpi-bt-ext discovery"
 
-    server.sendto(message, ("<broadcast>", 35224))
-    print("!")
+z    for _ in range(5):
+        server.sendto(message, ("<broadcast>", 35224))
+        print("message sent!")
+        time.sleep(1)
 
 
 def listen_discovery():
@@ -40,4 +42,4 @@ def listen_discovery():
     while True:
         # Thanks @seym45 for a fix
         data, addr = client.recvfrom(1024)
-        print("received message: %s, address: %s" % (data, addr))
+        print("received message: %s" % data)

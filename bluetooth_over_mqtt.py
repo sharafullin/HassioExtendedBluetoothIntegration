@@ -3,6 +3,9 @@ import time
 
 from multiprocessing import Process, Manager
 
+PORT = 35224
+DISCOVERY_MESSAGE = b"ha-rpi-bt-ext discovery"
+DISCOVERED_MESSAGE = b'ha-rpi-bt-ext discovered'
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Discover ha-rpi-bt-ext devices."""
@@ -19,11 +22,17 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
 
     add_entities(devices, True)
 
+
 def test():
-    devices = []
+    hubs = discover()    
+    for hub in hubs:
+        configure(hub, b'This is the configuration.')
+
+def discover():
+    result = []
     with Manager() as manager:
-        dev = manager.list()
-        discovery_listener_proc = Process(target=listen_discovery, args=(dev,))
+        hubs = manager.list()
+        discovery_listener_proc = Process(target=listen_discovery, args=(hubs,))
         discovery_listener_proc.start()
 
         broadcast_discovery()
@@ -32,9 +41,32 @@ def test():
         discovery_listener_proc.terminate()
         discovery_listener_proc.join()
 
-        devices = dev[:]
+        result = hubs[:]
+    
+    return result
 
-    print(devices[:])
+
+def configure(hub_ip, configuration):
+    # Create a TCP/IP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    # Connect the socket to the port where the server is listening
+    server_address = (hub_ip, PORT)
+    print("connecting to %s port %s" % server_address)
+    sock.connect(server_address)
+    try:
+        # Send data
+        print("sending '%s'" % configuration)
+        sock.sendall(configuration)
+
+        # Look for the response
+
+        data = sock.recv(1024)
+        print("returned: %s" % data)
+
+    finally:
+        print("closing socket")
+        sock.close()
 
 
 def broadcast_discovery():
@@ -53,10 +85,9 @@ def broadcast_discovery():
     # Set a timeout so the socket does not block
     # indefinitely when trying to receive data.
     server.settimeout(0.2)
-    message = b"ha-rpi-bt-ext discovery"
 
     for _ in range(3):
-        server.sendto(message, ("<broadcast>", 35224))
+        server.sendto(DISCOVERY_MESSAGE, ("<broadcast>", PORT))
         time.sleep(0.1)
 
 
@@ -73,12 +104,12 @@ def listen_discovery(devices):
     # Enable broadcasting mode
     client.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    client.bind(("", 35224))
+    client.bind(("", PORT))
 
     while True:
         # Thanks @seym45 for a fix
         data, addr = client.recvfrom(1024)
-        if data == b'ha-rpi-bt-ext discovered' and addr[0] not in devices:
+        if data == DISCOVERED_MESSAGE and addr[0] not in devices:
             devices.append(addr[0])
 
 
