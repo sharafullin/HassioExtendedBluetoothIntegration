@@ -3,6 +3,11 @@ import time
 
 from multiprocessing import Process, Manager
 
+from homeassistant.components.mqtt.climate import MqttClimate
+
+CONF_MQTT = "mqtt"
+CONF_BROKER = "broker"
+
 PORT = 35224
 DISCOVERY_MESSAGE = b"ha-rpi-bt-ext discovery"
 DISCOVERED_MESSAGE = b'ha-rpi-bt-ext discovered'
@@ -11,22 +16,14 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
     """Discover ha-rpi-bt-ext devices."""
     devices = []
 
-    p1 = Process(target=listen_discovery, args=(devices,))
-    p1.start()
-
-    broadcast_discovery()
-
-    for name, device_cfg in config[CONF_DEVICES].items():
-        mac = device_cfg[CONF_MAC]
-        devices.append(EQ3BTSmartThermostat(mac, name))
-
-    add_entities(devices, True)
-
-
-def test():
     hubs = discover()    
+
+    mqtt_ip = config[CONF_MQTT][CONF_BROKER]
+
+    dev_configs = []
     for hub in hubs:
-        configure(hub, b'This is the configuration.')
+        dev_configs += configure(hub, mqtt_ip)
+
 
 def discover():
     result = []
@@ -111,6 +108,3 @@ def listen_discovery(devices):
         data, addr = client.recvfrom(1024)
         if data == DISCOVERED_MESSAGE and addr[0] not in devices:
             devices.append(addr[0])
-
-
-test()
