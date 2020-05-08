@@ -1,4 +1,4 @@
-from . import discover, configure
+from helpers.discovery import discover, configure
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Discover ha-rpi-bt-ext devices."""
