@@ -1,4 +1,4 @@
-from bluetooth_hub_discovery import discover, configure
+from . import discover, configure
 
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Discover ha-rpi-bt-ext devices."""
