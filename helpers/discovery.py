@@ -43,26 +43,22 @@ def discover():
     return result
 
 
-def configure(hub_ip, configuration):
+def configure(hub_ip, configuration, logger):
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Connect the socket to the port where the server is listening
     server_address = (hub_ip, PORT)
-    print("connecting to %s port %s" % server_address)
     sock.connect(server_address)
     try:
         # Send data
-        print("sending '%s'" % configuration)
-        sock.sendall(configuration)
+        sock.sendall(configuration.encode())
 
         # Look for the response
 
         data = sock.recv(1024)
-        print("returned: %s" % data)
 
     finally:
-        print("closing socket")
         sock.close()
 
 
