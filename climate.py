@@ -1,4 +1,5 @@
 import logging
+import json
 from .helpers.discovery import discover, configure
 
 CONF_MQTT = "mqtt"
@@ -9,12 +10,14 @@ _LOGGER = logging.getLogger(__name__)
 def setup_platform(hass, config, add_entities, discovery_info=None):
     """Discover ha-rpi-bt-ext devices."""
     devices = []
+    _LOGGER.warning('test')
+    hubs = discover(_LOGGER)    
+    _LOGGER.warning('discovered')
+    _LOGGER.warning(hubs)
 
-    hubs = discover()    
-
-    mqtt_ip = config[CONF_MQTT][CONF_BROKER]
+    c = json.dumps(config[CONF_MQTT])
 
     for hub in hubs:
-        configure(hub, mqtt_ip, _LOGGER)
+        configure(hub, c, _LOGGER)
 
     return True

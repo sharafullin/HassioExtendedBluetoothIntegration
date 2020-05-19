@@ -25,16 +25,16 @@ def setup_platform(hass, config, add_entities, discovery_info=None):
         dev_configs += configure(hub, mqtt_ip)
 
 
-def discover():
+def discover(logger):
     result = []
     with Manager() as manager:
         hubs = manager.list()
-        discovery_listener_proc = Process(target=listen_discovery, args=(hubs,))
+        discovery_listener_proc = Process(target=listen_discovery, args=(hubs,logger))
         discovery_listener_proc.start()
 
-        broadcast_discovery()
+        broadcast_discovery(logger)
 
-        time.sleep(1)
+        time.sleep(5)
         discovery_listener_proc.terminate()
         discovery_listener_proc.join()
 
@@ -43,7 +43,7 @@ def discover():
     return result
 
 
-def configure(hub_ip, configuration, logger):
+def configure(hub_ip, configuration, logger) -> str:
     # Create a TCP/IP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -56,13 +56,16 @@ def configure(hub_ip, configuration, logger):
 
         # Look for the response
 
-        data = sock.recv(1024)
-
+        data = sock.recv(1048576)
+        logger.warning('returned:')
+        logger.warning(data)
+        
+        return data
     finally:
         sock.close()
 
 
-def broadcast_discovery():
+def broadcast_discovery(logger):
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 
     # Enable port reusage so we will be able to run multiple clients and servers on single (host, port).
@@ -79,12 +82,15 @@ def broadcast_discovery():
     # indefinitely when trying to receive data.
     server.settimeout(0.2)
 
+    logger.warning("discovery started")
     for _ in range(3):
         server.sendto(DISCOVERY_MESSAGE, ("<broadcast>", PORT))
+        logger.warning("discovery")
         time.sleep(0.1)
+    logger.warning("discovery finished")
 
 
-def listen_discovery(devices):
+def listen_discovery(devices, logger):
     client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)  # UDP
 
     # Enable port reusage so we will be able to run multiple clients and servers on single (host, port).
@@ -98,9 +104,12 @@ def listen_discovery(devices):
     client.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
     client.bind(("", PORT))
+    logger.warning("discovery listening")
 
     while True:
         # Thanks @seym45 for a fix
         data, addr = client.recvfrom(1024)
         if data == DISCOVERED_MESSAGE and addr[0] not in devices:
+            logger.warning("discovery received message")
+            logger.warning(data)
             devices.append(addr[0])
